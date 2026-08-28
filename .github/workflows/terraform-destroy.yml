@@ -1,0 +1,44 @@
+name: Terraform Destroy
+
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+  workflow_dispatch:
+env:
+  TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
+  TF_VAR_region: ${{ vars.GCP_REGION }}
+  TF_VAR_cluster_name: ${{ vars.CLUSTER_NAME }}
+  TF_VAR_repository_name: ${{ vars.REPOSITORY_NAME }}
+
+jobs:
+  terraform-destroy:
+    name: Terraform Destroy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.WIF_PROVIDER }}
+          service_account: ${{ vars.TERRAFORM_SERVICE_ACCOUNT }}
+          create_credentials_file: true
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Destroy Plan
+        run: terraform plan -destroy
+
+      - name: Terraform Destroy
+        run: terraform destroy -auto-approve
+
